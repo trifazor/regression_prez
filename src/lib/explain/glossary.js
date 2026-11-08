@@ -305,4 +305,120 @@ A refit (both models, all diagnostics) takes a few milliseconds.`,
     tag: 'Software',
     body: r`Free, open-source statistics program from the University of Amsterdam with an SPSS-like point-and-click interface. Its *Linear Regression* module supports hierarchical blocks, **R² change / F change**, and residual plots. That covers everything needed to replicate this deck.`,
   },
+  'three-jobs': {
+    title: 'Describe, Predict, Explain',
+    tag: 'Purpose',
+    body: r`The same regression output can serve three different jobs, and each job demands a different standard of evidence:
+
+**Describe**: "In 2016, 50-year-olds earned more on average than 25-year-olds." Needs only a good sample.
+
+**Predict**: "This 40-year-old will probably earn about €1,800." Needs a model that fits well out of sample, judged by [[sigma|σ̂]], not p-values.
+
+**Explain**: "Getting older *causes* higher pay." Needs [[exogeneity]], the hardest bar of all. See [[causation]].`,
+  },
+  intercept: {
+    title: 'Intercept β₀',
+    tag: 'Interpretation',
+    body: r`The predicted $Y$ when **every** regressor equals zero.
+
+Sometimes meaningful: score with 0 study hours. Often not: income at age 0 is nonsense, it is just where the line crosses the axis far outside the data. See [[extrapolation]].
+
+In the quadratic income model $\hat\beta_0$ is even negative, which is fine: nobody is aged 0.`,
+  },
+  slope: {
+    title: 'Slope β₁',
+    tag: 'Interpretation',
+    body: r`The change in **predicted** $Y$ for a one-unit increase in $X$, holding other regressors fixed:
+$$\hat\beta_1 = \frac{\widehat{\operatorname{Cov}}(X,Y)}{\widehat{\operatorname{Var}}(X)}\quad\text{(simple regression)}$$
+Units matter: points per hour, euros per year. It describes an average pattern across people, not what happens to one person over time; for that see [[cohort]].
+
+With a [[quadratic-term|quadratic term]] there is no single slope: it changes with $X$.`,
+  },
+  'gauss-markov': {
+    title: 'OLS Assumptions (Gauss-Markov)',
+    tag: 'Theory',
+    body: r`1. **Linear in parameters** ([[linear-in-params]]).
+2. **Random sample** of independent observations.
+3. **No perfect collinearity**: no regressor is an exact combination of others.
+4. **[[exogeneity|Exogeneity]]** $\mathbb E[\varepsilon\mid X]=0$: buys **unbiasedness**.
+5. **[[homoskedasticity|Homoskedasticity]]**: buys the classical SE formula and makes OLS the **B**est **L**inear **U**nbiased **E**stimator (BLUE).
+6. (Optional) **Normal errors**: exact t and F tests in small samples. Large samples get away without it.`,
+  },
+  dummy: {
+    title: 'Dummy Variable',
+    tag: 'Specification',
+    body: r`A 0/1 variable for a category, e.g. $\text{female}_i = 1$ for women, 0 for men.
+$$Y = \beta_0 + \beta_1 X + \beta_2\,\text{female}$$
+$\beta_2$ **shifts the whole line up or down** for women. Same slope, different intercept. With $k$ categories use $k-1$ dummies; the left-out one is the reference group.
+
+To let the slope differ too, add an [[interaction]].`,
+  },
+  interaction: {
+    title: 'Interaction Term',
+    tag: 'Specification',
+    body: r`The product of two regressors, e.g. $\text{female}\times\text{age}$:
+$$Y = \beta_0 + \beta_1\,\text{age} + \beta_2\,\text{female} + \beta_3\,(\text{female}\times\text{age})$$
+Now the age slope is $\beta_1$ for men and $\beta_1 + \beta_3$ for women. **The effect of one variable depends on the other.**
+
+Testing $\beta_3 = 0$ asks: do men and women have the same age profile? With several interaction terms use a joint [[ftest|F-test]].`,
+  },
+  'log-model': {
+    title: 'Log Transformations',
+    tag: 'Specification',
+    body: r`Taking $\log Y$ turns absolute effects into **percentage** effects:
+$$\log Y = \beta_0 + \beta_1 X \;\Rightarrow\; \text{one more unit of } X \approx 100\beta_1\,\%\text{ change in } Y$$
+Useful for [[skew|right-skewed]] variables like income, and it often tames [[heteroskedasticity]]. Still [[linear-in-params|linear in parameters]].`,
+  },
+  ovb: {
+    title: 'Omitted Variable Bias',
+    tag: 'Hazard',
+    body: r`If a variable $Z$ that affects $Y$ is left out **and** is correlated with $X$, the coefficient on $X$ absorbs part of $Z$'s effect:
+$$\hat\beta_1 \to \beta_1 + \beta_Z \cdot \frac{\operatorname{Cov}(X,Z)}{\operatorname{Var}(X)}$$
+The bias can be large enough to **flip the sign**: see [[simpson]]. It violates [[exogeneity]] and no sample size fixes it.
+
+Remedy: measure and include $Z$, or use designs that break the link (experiments, panels, instruments).`,
+  },
+  simpson: {
+    title: "Simpson's Paradox",
+    tag: 'Hazard',
+    body: r`A trend that appears in every group **reverses** when the groups are pooled.
+
+Tutoring example: within strong students and within weak students, more tutoring means better grades. But weak students get far more tutoring, so pooled data show "tutoring lowers grades". The group is an [[ovb|omitted variable]].`,
+  },
+  confounder: {
+    title: 'Confounder',
+    tag: 'Causality',
+    body: r`A third variable that drives **both** $X$ and $Y$. Temperature drives ice-cream sales and sunburns; the two correlate without one causing the other.
+
+Leaving a confounder out produces [[ovb|omitted variable bias]]. Controlling for it (adding it as a regressor) can make the spurious coefficient collapse toward zero.`,
+  },
+  causation: {
+    title: 'Correlation vs. Causation',
+    tag: 'Causality',
+    body: r`Regression measures **association**: how the average of $Y$ differs across values of $X$. It becomes causal only if [[exogeneity]] holds, meaning nothing else that moves $Y$ is tangled up with $X$.
+
+Threats: [[confounder|confounders]], reverse causality, selection. Strong designs (randomized experiments, natural experiments, panel data) make the causal reading credible. A good fit and a tiny p-value do **not**.`,
+  },
+  extrapolation: {
+    title: 'Extrapolation',
+    tag: 'Hazard',
+    body: r`Using the model outside the range of the data. The fit is only disciplined where there are observations.
+
+Our parabola, fit on ages 18–85, predicts **negative** income around age 107, and the straight line predicts income at age 0. Polynomials are especially dangerous at the edges: they shoot off to $\pm\infty$.`,
+  },
+  influence: {
+    title: 'Influential Point',
+    tag: 'Hazard',
+    body: r`A point whose removal noticeably changes the estimates. Influence needs **both**:
+
+**High [[leverage]]**: an unusual $X$ value, far from $\bar x$.
+**Large [[residual]]**: it disagrees with the pattern of the rest.
+
+An outlier in $Y$ at an average $X$ barely moves the slope; the same outlier at the edge can tilt it entirely. Cook's distance combines both into one number.`,
+  },
+  vote: {
+    title: 'Why predict first?',
+    tag: 'Method',
+    body: r`Committing to a guess **before** seeing the analysis protects against hindsight ("I knew it all along"). It is the classroom version of **pre-registration** in science: write the hypothesis down, then test it.`,
+  },
 };

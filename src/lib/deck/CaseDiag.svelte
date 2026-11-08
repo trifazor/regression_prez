@@ -1,4 +1,6 @@
 <script>
+  import SlideHead from '../SlideHead.svelte';
+  import HazardBadge from './HazardBadge.svelte';
   import ResidualChart from '../charts/ResidualChart.svelte';
   import Tex from '../Tex.svelte';
   import Term from '../explain/Term.svelte';
@@ -8,7 +10,7 @@
   let nHigh = $derived(fitted.res ? fitted.res[model].hat.filter((h) => h > (2 * (view.degree + 1)) / fitted.res.n).length : 0);
 </script>
 
-<header class="slide-head"><span class="kicker"><b>09</b> <Term id="diagnostics">Diagnostics</Term></span><h2>Can we trust the standard errors?</h2></header>
+<SlideHead section="p4" title="Checking hazards 3 and 4 on real data" />
 <div class="body cols wide-left">
   <div>
     <div class="topbar">
@@ -31,12 +33,12 @@
   <div class="stack">
     {#if mode === 'resid'}
       <div class="card">
-        <h3>1 · Look for a fan</h3>
+        <h3><HazardBadge n={4} /></h3>
         <p class="small">If the spread were constant (<Term id="homoskedasticity">homoskedastic</Term>) we would see an even horizontal band. Instead it <b>widens</b> as predicted income rises: <Term id="heteroskedasticity">heteroskedasticity</Term>.</p>
       </div>
       <div class="callout"><p class="small"><b>So what?</b> β̂ stays unbiased, but the classical SEs and p-values are off. Use <Term id="robust-se">robust SEs</Term> or model log income.</p></div>
       <div class="card">
-        <h3>2 · Who pulls the curve?</h3>
+        <h3><HazardBadge n={3} /></h3>
         <p class="small">Pink points have high <Term id="leverage">leverage</Term>: unusually young or old. They pin down the ends of the parabola.</p>
       </div>
     {:else}

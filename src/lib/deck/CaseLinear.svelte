@@ -1,4 +1,6 @@
 <script>
+  import SlideHead from '../SlideHead.svelte';
+  import HazardBadge from './HazardBadge.svelte';
   import RegressionChart from '../charts/RegressionChart.svelte';
   import Term from '../explain/Term.svelte';
   import { fitted } from '../model.svelte.js';
@@ -7,7 +9,7 @@
   let m = $derived(fitted.res?.linear);
 </script>
 
-<header class="slide-head"><span class="kicker"><b>04</b> Model 1</span><h2>Fit a straight line through the cloud</h2></header>
+<SlideHead section="p4" title="Model 1 on real data: a straight line" />
 <div class="body cols wide-left">
   <div>
     <div class="chart-card"><RegressionChart degree={1} {showResiduals} /></div>
@@ -27,7 +29,7 @@
       <div class="callout pink">
         <p><b>But:</b> <Term id="pvalue">p</Term> = {m.p[1].toFixed(2)}, so the slope is <b>not significant</b>. And <Term id="r2">R²</Term> = {(m.r2 * 100).toFixed(1)}%: the line explains almost nothing.</p>
       </div>
-      <p>Is age irrelevant for income? Or is a straight line the <strong>wrong shape</strong>?</p>
+      <div class="stack" style="gap:10px"><HazardBadge n={1} /><p class="small" style="margin:0">Interpretation card #3: "not significant" can mean <strong>wrong shape</strong>. Was the class right about a hump?</p></div>
     {/if}
   </div>
 </div>

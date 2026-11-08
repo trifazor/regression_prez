@@ -1,4 +1,5 @@
 <script>
+  import SlideHead from '../SlideHead.svelte';
   import RegressionChart from '../charts/RegressionChart.svelte';
   import Controls from '../Controls.svelte';
   import Term from '../explain/Term.svelte';
@@ -9,7 +10,7 @@
   const d = (a, b, k = 1) => (b == null || a == null ? '' : `${a - b >= 0 ? '+' : ''}${(a - b).toFixed(k)}`);
 </script>
 
-<header class="slide-head"><span class="kicker"><b>10</b> Lab</span><h2>Try to break the hump</h2></header>
+<SlideHead section="open" title="Appendix: live lab for questions" />
 <Controls />
 <div class="body cols wide-left">
   <div class="chart-card"><RegressionChart degree={view.degree} height={310} /></div>

@@ -1,4 +1,6 @@
 <script>
+  import SlideHead from '../SlideHead.svelte';
+  import HazardBadge from './HazardBadge.svelte';
   import RegressionChart from '../charts/RegressionChart.svelte';
   import CoefTable from '../CoefTable.svelte';
   import Tex from '../Tex.svelte';
@@ -7,7 +9,7 @@
   let both = $state(false);
 </script>
 
-<header class="slide-head"><span class="kicker"><b>07</b> Model 2</span><h2>Let the slope bend: add age²</h2></header>
+<SlideHead section="p4" title="Model 2: let the slope bend" />
 <div class="body cols wide-left">
   <div>
     <div class="topbar">

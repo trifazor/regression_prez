@@ -1,4 +1,5 @@
 <script>
+  import SlideHead from '../SlideHead.svelte';
   import { csvString, fitted, sample } from '../model.svelte.js';
   import Term from '../explain/Term.svelte';
 
@@ -12,7 +13,7 @@
   const p = (v) => (v < 0.001 ? '<.001' : v.toFixed(3));
 </script>
 
-<header class="slide-head"><span class="kicker"><b>11</b> Hands-on</span><h2>Replicate everything in <Term id="jasp">JASP</Term></h2></header>
+<SlideHead section="ex" title="JASP walkthrough and reference values" />
 <div class="body cols">
   <div class="stack">
     <div><button class="btn pink" onclick={download}>↓ Download allbus2016_subsample.csv</button>
@@ -37,7 +38,7 @@
       <summary>Module 3 · Residual diagnostics</summary>
       <ol>
         <li><em>Plots → Residuals vs. predicted</em> and <em>Q-Q plot standardized residuals</em>.</li>
-        <li>Describe the fan and the upper tail. Match them to slide 8.</li>
+        <li>Describe the fan and the upper tail. Match them to Hazard 4.</li>
       </ol>
     </details>
   </div>

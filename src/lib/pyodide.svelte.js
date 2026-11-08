@@ -7,6 +7,7 @@ const INDEX_URL = `https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/`;
 export const py = $state({ status: 'idle', message: '', bootMs: 0, lastFitMs: 0 });
 
 let fitFn = null;
+const pyFns = {};
 
 function loadScript(src) {
   return new Promise((resolve, reject) => {
@@ -32,7 +33,8 @@ export function bootPyodide(data) {
       py.message = 'Compiling OLS engine…';
       pyodide.runPython(olsSource);
       pyodide.globals.get('load')(JSON.stringify(data));
-      fitFn = pyodide.globals.get('fit');
+      fitFn = pyodide.globals.get("fit");
+      for (const name of ["fit_design", "fit_sex"]) pyFns[name] = pyodide.globals.get(name);
       py.bootMs = performance.now() - t0;
       py.status = 'ready';
       py.message = `Python ready in ${(py.bootMs / 1000).toFixed(1)} s`;
@@ -45,10 +47,17 @@ export function bootPyodide(data) {
 }
 
 /** Fit both models on the rows where mask[i] is true. Synchronous; returns parsed results. */
-export function fit(mask) {
+export function fit(mask, { track = true } = {}) {
   if (!fitFn) return null;
   const t0 = performance.now();
   const res = JSON.parse(fitFn(JSON.stringify(mask)));
-  py.lastFitMs = performance.now() - t0;
+  if (track) py.lastFitMs = performance.now() - t0; // skip when called inside $derived (no state writes allowed)
   return res;
+}
+
+/** Call a JSON-in/JSON-out Python function from ols.py (fit_design, fit_sex). Returns null until ready. */
+export function callPy(name, payload) {
+  const fn = pyFns[name];
+  if (!fn) return null;
+  return JSON.parse(fn(JSON.stringify(payload)));
 }

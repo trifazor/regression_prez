@@ -73,3 +73,72 @@ def fit(mask_json):
     # Q-Q theoretical quantiles for standardized residuals (Blom positions)
     out["qq"] = stats.norm.ppf((np.arange(1, n + 1) - 0.375) / (n + 0.25)).tolist()
     return json.dumps(out, allow_nan=False, default=float)
+
+
+def _report(m, names, Xgrid=None):
+    """Common output for a fitted model: classical + HC1 robust inference, optional prediction band."""
+    n, k = m["n"], m["k"]
+    X, e = m["X"], m["e"]
+    meat = (X * (e ** 2)[:, None]).T @ X
+    v_hc1 = m["xtx_inv"] @ meat @ m["xtx_inv"] * n / (n - k)
+    se_r = np.sqrt(np.diag(v_hc1))
+    t_r = m["b"] / se_r
+    out = {
+        "names": names, "b": m["b"].tolist(), "se": m["se"].tolist(), "t": m["t"].tolist(), "p": m["p"].tolist(),
+        "se_robust": se_r.tolist(), "p_robust": (2 * stats.t.sf(np.abs(t_r), m["df"])).tolist(),
+        "r2": 1 - m["rss"] / m["tss"], "rss": m["rss"], "df": m["df"], "n": n, "sigma": float(np.sqrt(m["s2"])),
+        "fitted": m["fitted"].tolist(), "resid": m["e"].tolist(), "hat": m["hat"].tolist(),
+    }
+    if Xgrid is not None:
+        yhat = Xgrid @ m["b"]
+        half = stats.t.ppf(0.975, m["df"]) * np.sqrt(np.einsum("ij,jk,ik->i", Xgrid, m["xtx_inv"], Xgrid) * m["s2"])
+        out.update(curve=yhat.tolist(), lo=(yhat - half).tolist(), hi=(yhat + half).tolist())
+    return out
+
+
+def fit_design(payload):
+    """Generic OLS for the toy datasets.
+    payload = {"y": [...], "columns": {name: [...]}, "grid": {name: [...]} (optional, same column names)}
+    A constant is always added first."""
+    d = json.loads(payload)
+    y = np.asarray(d["y"], dtype=float)
+    names = ["const"] + list(d["columns"])
+    X = np.column_stack([np.ones_like(y)] + [np.asarray(d["columns"][c], dtype=float) for c in d["columns"]])
+    G = None
+    if d.get("grid"):
+        g = d["grid"]
+        glen = len(next(iter(g.values())))
+        G = np.column_stack([np.ones(glen)] + [np.asarray(g[c], dtype=float) for c in d["columns"]])
+    return json.dumps(_report(_ols(X, y), names, G), allow_nan=False, default=float)
+
+
+def fit_sex(mask_json):
+    """Quadratic age profile with a female dummy and female x age interactions.
+    income = b0 + b1 age + b2 age^2 + b3 F + b4 F*age + b5 F*age^2"""
+    mask = np.asarray(json.loads(mask_json), dtype=bool)
+    age, y = DATA["age"][mask], DATA["income"][mask]
+    fem = (DATA["sex"][mask] == 2).astype(float)
+    a2 = age ** 2
+    full = _ols(np.column_stack([np.ones_like(age), age, a2, fem, fem * age, fem * a2]), y)
+    dummy = _ols(np.column_stack([np.ones_like(age), age, a2, fem]), y)
+    pooled = _ols(np.column_stack([np.ones_like(age), age, a2]), y)
+
+    def ftest(r, u, q):
+        F = ((r["rss"] - u["rss"]) / q) / (u["rss"] / u["df"])
+        return {"F": F, "df1": q, "df2": u["df"], "p": float(stats.f.sf(F, q, u["df"]))}
+
+    grid = np.linspace(18, 85, 80)
+    b = full["b"]
+    curves, peaks = {}, {}
+    for label, f in (("men", 0.0), ("women", 1.0)):
+        G = np.column_stack([np.ones_like(grid), grid, grid ** 2, f + 0 * grid, f * grid, f * grid ** 2])
+        curves[label] = (G @ b).tolist()
+        c1, c2 = b[1] + f * b[4], b[2] + f * b[5]
+        peaks[label] = float(-c1 / (2 * c2)) if c2 < 0 else None
+    names = ["const", "age", "age²", "female", "female×age", "female×age²"]
+    out = _report(full, names)
+    out.update(grid=grid.tolist(), curves=curves, peaks=peaks,
+               dummy={"b": dummy["b"].tolist(), "p": dummy["p"].tolist()},
+               test_interaction=ftest(dummy, full, 2), test_any_sex=ftest(pooled, full, 3),
+               sex=DATA["sex"][mask].astype(int).tolist(), idx=np.flatnonzero(mask).tolist())
+    return json.dumps(out, allow_nan=False, default=float)

@@ -4,25 +4,18 @@
   import { loadSample, refit, filters, sample } from './lib/model.svelte.js';
   import { thread, closeThread } from './lib/explain/thread.svelte.js';
   import ThreadPanel from './lib/explain/ThreadPanel.svelte';
-  import Title from './lib/slides/Title.svelte';
-  import Question from './lib/slides/Question.svelte';
-  import Data from './lib/slides/Data.svelte';
-  import Linear from './lib/slides/Linear.svelte';
-  import ReadTable from './lib/slides/ReadTable.svelte';
-  import Projection from './lib/slides/Projection.svelte';
-  import Quadratic from './lib/slides/Quadratic.svelte';
-  import FTest from './lib/slides/FTest.svelte';
-  import Diagnostics from './lib/slides/Diagnostics.svelte';
-  import Lab from './lib/slides/Lab.svelte';
-  import Jasp from './lib/slides/Jasp.svelte';
-  import Summary from './lib/slides/Summary.svelte';
+  import { sections } from './lib/sections.js';
+  import * as D from './lib/deck/index.js';
 
+  // [component, footer title, section]: sections set the presenter colour and name.
   const slides = [
-    { c: Title, t: 'Title' }, { c: Question, t: 'The question' }, { c: Data, t: 'Data' },
-    { c: Linear, t: 'Model 1' }, { c: ReadTable, t: 'Reading the table' }, { c: Projection, t: 'Geometry' },
-    { c: Quadratic, t: 'Model 2' }, { c: FTest, t: 'F-test' }, { c: Diagnostics, t: 'Diagnostics' },
-    { c: Lab, t: 'Lab' }, { c: Jasp, t: 'JASP' }, { c: Summary, t: 'Takeaways' },
-  ];
+    [D.Title, 'Welcome', 'open'], [D.Guess, 'Guess the pattern', 'open'],
+    [D.Purpose, 'Purpose', 'p1'], [D.Averages, 'Averages that move', 'p1'], [D.DragLine, 'Fit by hand', 'p1'], [D.Anatomy, 'Anatomy', 'p1'],
+    [D.Machine, 'Assumptions', 'p2'], [D.Projection, 'Geometry', 'p2'], [D.ReadTable, 'Reading output', 'p2'], [D.Interpret, 'Drill', 'p2'], [D.Flexible, 'Flexible shapes', 'p2'],
+    [D.Hazards, 'Five hazards', 'p3'], [D.H1Shape, 'Wrong shape', 'p3'], [D.H2Omitted, 'Missing variable', 'p3'], [D.H3Leverage, 'One point rules', 'p3'], [D.H4Fan, 'Uneven noise', 'p3'], [D.H5Causal, 'Not causal', 'p3'],
+    [D.CaseIntro, 'The case', 'p4'], [D.CaseLinear, 'Straight line', 'p4'], [D.CaseQuad, 'Add age²', 'p4'], [D.CaseF, 'F-test', 'p4'], [D.BySex, 'Men vs women', 'p4'], [D.CaseDiag, 'Diagnostics', 'p4'], [D.Verdict, 'Verdict', 'p4'],
+    [D.GroupWork, 'Group exercise', 'ex'], [D.JaspSteps, 'JASP', 'ex'], [D.Takeaways, 'Takeaways', 'open'], [D.Lab, 'Appendix: lab', 'open'],
+  ].map(([c, t, s]) => ({ c, t, s }));
   const fromHash = () => Math.min(slides.length - 1, Math.max(0, (parseInt(location.hash.slice(1)) || 1) - 1));
   let index = $state(fromHash());
 
@@ -68,10 +61,11 @@
     <section class="slide"><Current /></section>
     <footer class="deck-footer">
       <button class="nav" onclick={() => go(index - 1)} disabled={index === 0} aria-label="Previous slide">←</button>
+      <span class="who" style="background:{sections[slides[index].s].color}; color:{sections[slides[index].s].ink}">{sections[slides[index].s].who}</span>
       <span class="title">{String(index + 1).padStart(2, '0')} · {slides[index].t}</span>
       <div class="progress">
         {#each slides as s, i}
-          <button class:done={i < index} class:now={i === index} onclick={() => go(i)} title={s.t} aria-label="Go to slide {i + 1}: {s.t}"></button>
+          <button class:done={i < index} class:now={i === index} style="--sec:{sections[s.s].color}" onclick={() => go(i)} title={s.t} aria-label="Go to slide {i + 1}: {s.t}"></button>
         {/each}
       </div>
       <span class="kernel {py.status}" title={py.message}>{py.status === 'ready' ? 'Python ready' : py.status === 'error' ? 'Python error' : 'Loading Python…'}</span>

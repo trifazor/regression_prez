@@ -1,4 +1,6 @@
 <script>
+  import SlideHead from '../SlideHead.svelte';
+  import HazardBadge from './HazardBadge.svelte';
   import Tex from '../Tex.svelte';
   import Plot from '../charts/Plot.svelte';
   import Term from '../explain/Term.svelte';
@@ -17,7 +19,7 @@
   let curve = $derived(r ? Array.from({ length: 200 }, (_, i) => { const x = 0.05 + (i * (xmax - 0.05)) / 199; return [x, fpdf(x, 1, r.ftest.df2)]; }) : []);
 </script>
 
-<header class="slide-head"><span class="kicker"><b>08</b> Testing</span><h2>Is the curve real, or just noise?</h2></header>
+<SlideHead section="p4" title="Is the curve real, or just noise?" />
 <div class="body cols">
   <div class="stack">
     <p>Adding a variable <b>always</b> lowers the <Term id="rss">RSS</Term>. The <Term id="ftest">partial F-test</Term> asks whether it drops by <b>more than chance would</b>. The models are <Term id="nested">nested</Term>: linear = quadratic with β₂ = 0.</p>

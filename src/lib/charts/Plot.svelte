@@ -13,10 +13,19 @@
   let y = $derived(linear(yDomain, [height - m.bottom, m.top]));
   let xt = $derived(niceTicks(...xDomain, 8));
   let yt = $derived(niceTicks(...yDomain, 6));
+  let svg = $state();
+
+  // Pointer event → data coordinates (works through the stage's CSS scale).
+  function toData(e) {
+    const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(svg.getScreenCTM().inverse());
+    const xi = (p.x - m.left) / (width - m.left - m.right);
+    const yi = (height - m.bottom - p.y) / (height - m.top - m.bottom);
+    return [xDomain[0] + xi * (xDomain[1] - xDomain[0]), yDomain[0] + yi * (yDomain[1] - yDomain[0])];
+  }
 </script>
 
 <div class="plot">
-  <svg viewBox="0 0 {width} {height}" role="img" aria-label="{yLabel} versus {xLabel}">
+  <svg bind:this={svg} viewBox="0 0 {width} {height}" role="img" aria-label="{yLabel} versus {xLabel}">
     <g class="grid">
       {#each yt as t}<line x1={m.left} x2={width - m.right} y1={y(t)} y2={y(t)} />{/each}
     </g>
@@ -33,7 +42,7 @@
     </g>
     <defs><clipPath id="clip-{width}-{height}"><rect x={m.left} y={m.top} width={width - m.left - m.right} height={height - m.top - m.bottom} /></clipPath></defs>
     <g clip-path="url(#clip-{width}-{height})">
-      {@render children({ x, y })}
+      {@render children({ x, y, toData })}
     </g>
   </svg>
   {#if tooltip}
