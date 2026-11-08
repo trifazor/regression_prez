@@ -1,0 +1,75 @@
+import json
+import numpy as np
+from scipy import stats
+
+DATA = {}
+
+
+def load(payload):
+    d = json.loads(payload)
+    for k, v in d.items():
+        DATA[k] = np.asarray(v, dtype=float)
+
+
+def _ols(X, y):
+    """OLS via QR (numerically identical to (X'X)^-1 X'y, but stable for age^2)."""
+    Q, R = np.linalg.qr(X)
+    b = np.linalg.solve(R, Q.T @ y)
+    Rinv = np.linalg.inv(R)
+    xtx_inv = Rinv @ Rinv.T
+    fitted = X @ b
+    e = y - fitted
+    n, k = X.shape
+    rss = float(e @ e)
+    df = n - k
+    s2 = rss / df
+    se = np.sqrt(np.diag(xtx_inv) * s2)
+    t = b / se
+    p = 2 * stats.t.sf(np.abs(t), df)
+    tss = float(((y - y.mean()) ** 2).sum())
+    hat = (Q ** 2).sum(axis=1)
+    return dict(b=b, se=se, t=t, p=p, xtx_inv=xtx_inv, fitted=fitted, e=e, rss=rss, tss=tss,
+                df=df, s2=s2, hat=hat, n=n, k=k, X=X)
+
+
+def _design(age, degree):
+    return np.column_stack([age ** j for j in range(degree + 1)])
+
+
+def fit(mask_json):
+    """Fit linear and quadratic models on the masked rows; return everything the UI needs."""
+    mask = np.asarray(json.loads(mask_json), dtype=bool)
+    age, y = DATA["age"][mask], DATA["income"][mask]
+    n = int(mask.sum())
+    grid = np.linspace(age.min(), age.max(), 80) if n else np.array([])
+    tcrit = stats.t.ppf(0.975, n - 3) if n > 3 else np.nan
+    out = {"n": n, "idx": np.flatnonzero(mask).tolist(), "grid": grid.tolist()}
+    models = {}
+    for name, deg in (("linear", 1), ("quadratic", 2)):
+        m = _ols(_design(age, deg), y)
+        G = _design(grid, deg)
+        yhat = G @ m["b"]
+        tc = stats.t.ppf(0.975, m["df"])
+        half = tc * np.sqrt(np.einsum("ij,jk,ik->i", G, m["xtx_inv"], G) * m["s2"])
+        r2 = 1 - m["rss"] / m["tss"]
+        lev = m["hat"]
+        std_res = m["e"] / np.sqrt(m["s2"] * (1 - lev))
+        models[name] = {
+            "b": m["b"].tolist(), "se": m["se"].tolist(), "t": m["t"].tolist(), "p": m["p"].tolist(),
+            "r2": r2, "adj_r2": 1 - (1 - r2) * (n - 1) / m["df"], "rss": m["rss"], "df": m["df"],
+            "sigma": float(np.sqrt(m["s2"])),
+            "fitted": m["fitted"].tolist(), "resid": m["e"].tolist(), "hat": lev.tolist(),
+            "std_resid": std_res.tolist(),
+            "curve": yhat.tolist(), "lo": (yhat - half).tolist(), "hi": (yhat + half).tolist(),
+            "orth": (m["X"].T @ m["e"]).tolist(),   # X'e, should be ~0
+        }
+    lin, quad = models["linear"], models["quadratic"]
+    F = (lin["rss"] - quad["rss"]) / (quad["rss"] / quad["df"])
+    b1, b2 = quad["b"][1], quad["b"][2]
+    out.update(models)
+    out["ftest"] = {"F": F, "df1": 1, "df2": quad["df"], "p": float(stats.f.sf(F, 1, quad["df"])),
+                    "dR2": quad["r2"] - lin["r2"], "fcrit": float(stats.f.ppf(0.95, 1, quad["df"]))}
+    out["peak"] = (-b1 / (2 * b2)) if b2 < 0 else None
+    # Q-Q theoretical quantiles for standardized residuals (Blom positions)
+    out["qq"] = stats.norm.ppf((np.arange(1, n + 1) - 0.375) / (n + 0.25)).tolist()
+    return json.dumps(out, allow_nan=False, default=float)
